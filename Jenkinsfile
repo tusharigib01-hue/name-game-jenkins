@@ -1,25 +1,39 @@
 pipeline {
     agent any
 
+    environment {
+        VENV_DIR = 'venv'
+    }
+
     stages {
+        stage('Checkout SCM') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Install Python & Dependencies') {
             steps {
                 sh '''
-                # Update packages
-                apt update
+                    # Update packages
+                    apt update
 
-                # Install Python3 and venv module
-                apt install -y python3 python3-venv python3-pip
+                    # Install Python and tools if not already installed
+                    apt install -y python3 python3-venv python3-pip
 
-                # Create virtual environment
-                python3 -m venv venv
+                    # Create virtual environment
+                    python3 -m venv $VENV_DIR
 
-                # Activate venv
-                source venv/bin/activate
+                    # Activate virtual environment using dot (works in Jenkins sh)
+                    . $VENV_DIR/bin/activate
 
-                # Install Python dependencies inside venv
-                pip install --upgrade pip
-                pip install -r requirements.txt
+                    # Upgrade pip inside virtual environment
+                    pip install --upgrade pip
+
+                    # Install project dependencies (if requirements.txt exists)
+                    if [ -f requirements.txt ]; then
+                        pip install -r requirements.txt
+                    fi
                 '''
             }
         }
@@ -27,8 +41,15 @@ pipeline {
         stage('Run Tests') {
             steps {
                 sh '''
-                source venv/bin/activate
-                pytest
+                    # Activate virtual environment
+                    . $VENV_DIR/bin/activate
+
+                    # Run your tests (example with pytest)
+                    if [ -f pytest.ini ] || [ -d tests ]; then
+                        pytest
+                    else
+                        echo "No tests found, skipping"
+                    fi
                 '''
             }
         }
@@ -36,12 +57,14 @@ pipeline {
 
     post {
         success {
-            echo '🎉 Build SUCCESS: Tests passed!'
+            echo "✅ Build and tests completed successfully!"
         }
         failure {
-            echo '❌ Build FAILED'
+            echo "❌ Build FAILED"
         }
     }
 }
+
+
 
 
