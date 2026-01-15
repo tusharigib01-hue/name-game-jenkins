@@ -1,8 +1,12 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'python:3.13'
+            args '-u root:root' // optional: run as root to install packages
+        }
+    }
 
     stages {
-
         stage('Install Dependencies') {
             steps {
                 sh 'pip install -r requirements.txt'
