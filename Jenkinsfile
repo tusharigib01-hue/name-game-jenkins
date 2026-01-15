@@ -5,32 +5,43 @@ pipeline {
         stage('Install Python & Dependencies') {
             steps {
                 sh '''
-                # Update package list
+                # Update packages
                 apt update
 
-                # Install Python3 and pip
-                apt install -y python3 python3-pip
+                # Install Python3 and venv module
+                apt install -y python3 python3-venv python3-pip
 
-                # Install required Python packages
-                pip3 install -r requirements.txt
+                # Create virtual environment
+                python3 -m venv venv
+
+                # Activate venv
+                source venv/bin/activate
+
+                # Install Python dependencies inside venv
+                pip install --upgrade pip
+                pip install -r requirements.txt
                 '''
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh 'pytest'
+                sh '''
+                source venv/bin/activate
+                pytest
+                '''
             }
         }
     }
 
     post {
         success {
-            echo '🎉 Build SUCCESS: Game logic is correct!'
+            echo '🎉 Build SUCCESS: Tests passed!'
         }
         failure {
-            echo '❌ Build FAILED: Fix the game logic!'
+            echo '❌ Build FAILED'
         }
     }
 }
+
 
